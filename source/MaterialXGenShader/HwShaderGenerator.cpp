@@ -299,7 +299,8 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
     VariableBlock& vsInputs = vs->getInputBlock(HW::VERTEX_INPUTS);
     vsInputs.add(Type::VECTOR3, HW::T_IN_POSITION);
     VariableBlock& vsPrivateUniforms = vs->getUniformBlock(HW::PRIVATE_UNIFORMS);
-    vsPrivateUniforms.add(Type::MATRIX44, HW::T_WORLD_MATRIX);
+    // In Alyce the world matrix is provided as a push constant
+    // vsPrivateUniforms.add(Type::MATRIX44, HW::T_WORLD_MATRIX);
     vsPrivateUniforms.add(Type::MATRIX44, HW::T_VIEW_PROJECTION_MATRIX);
 
     // Create pixel stage.
