@@ -150,6 +150,7 @@ const string VERTEX_INPUTS                    = "VertexInputs";
 const string VERTEX_DATA                      = "VertexData";
 const string PRIVATE_UNIFORMS                 = "PrivateUniforms";
 const string PUBLIC_UNIFORMS                  = "PublicUniforms";
+const string PUSH_CONSTANTS                   = "PrivatePushConstants";
 const string LIGHT_DATA                       = "LightData";
 const string PIXEL_OUTPUTS                    = "PixelOutputs";
 const string DIR_N                            = "N";
@@ -292,6 +293,7 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
 
     vs->createUniformBlock(HW::PRIVATE_UNIFORMS, "u_prv");
     vs->createUniformBlock(HW::PUBLIC_UNIFORMS, "u_pub");
+    vs->createUniformBlock(HW::PUSH_CONSTANTS, "u_pc");
 
     // Create required variables for vertex stage
     VariableBlock& vsInputs = vs->getInputBlock(HW::VERTEX_INPUTS);
@@ -303,6 +305,7 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
     // Create pixel stage.
     ShaderStagePtr ps = createStage(Stage::PIXEL, *shader);
     VariableBlockPtr psOutputs = ps->createOutputBlock(HW::PIXEL_OUTPUTS, "o_ps");
+    ps->createUniformBlock(HW::PUSH_CONSTANTS, "u_pc");
 
     // Create required Uniform blocks and any additional blocks if needed.
     VariableBlockPtr psPrivateUniforms = ps->createUniformBlock(HW::PRIVATE_UNIFORMS, "u_prv");
@@ -312,6 +315,24 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
 
     // Add a block for data from vertex to pixel shader.
     addStageConnectorBlock(HW::VERTEX_DATA, HW::T_VERTEX_DATA_INSTANCE, *vs, *ps);
+
+    // In Alyce, we want these push constants to always be present in our vertex shader
+    addStageUniform(HW::PUSH_CONSTANTS, Type::MATRIX44, HW::T_WORLD_MATRIX, *vs);
+    addStageUniform(HW::PUSH_CONSTANTS, Type::MATRIX44, HW::T_WORLD_INVERSE_TRANSPOSE_MATRIX, *vs);
+    // In Alyce, we have specific uniforms and attributes that we always want
+    // written out in our shaders. This code ensures these are always added.
+    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_POSITION, *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_NORMAL, *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR2, HW::T_IN_TEXCOORD + "_0", *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::COLOR4, HW::T_IN_COLOR + "_0", *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_TANGENT, *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_BITANGENT, *vs);
+    addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_POSITION_WORLD, *vs, *ps);
+    addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_NORMAL_WORLD, *vs, *ps);
+    addStageConnector(HW::VERTEX_DATA, Type::VECTOR2, HW::T_TEXCOORD + "_0", *vs, *ps);
+    addStageConnector(HW::VERTEX_DATA, Type::COLOR4, HW::T_COLOR + "_0", *vs, *ps);
+    addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_TANGENT_WORLD, *vs, *ps);
+    addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_BITANGENT_WORLD, *vs, *ps);
 
     // Add uniforms for transparent rendering.
     if (context.getOptions().hwTransparency)
@@ -336,8 +357,11 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
     }
 
     // Add uniforms for environment lighting.
-    bool lighting = graph->hasClassification(ShaderNode::Classification::SHADER | ShaderNode::Classification::SURFACE) ||
-                    graph->hasClassification(ShaderNode::Classification::BSDF);
+    // In Alyce, our lighting is deferred, so no need to generate
+    // any lighting code in these shaders
+    // bool lighting = graph->hasClassification(ShaderNode::Classification::SHADER | ShaderNode::Classification::SURFACE) ||
+    //                 graph->hasClassification(ShaderNode::Classification::BSDF);
+    bool lighting = false;
     if (lighting && context.getOptions().hwSpecularEnvironmentMethod != SPECULAR_ENVIRONMENT_NONE)
     {
         const Matrix44 yRotationPI = Matrix44::createScale(Vector3(-1, 1, -1));
@@ -383,10 +407,17 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
     // Add the pixel stage output. This needs to be a color4 for rendering,
     // so copy name and variable from the graph output but set type to color4.
     // TODO: Improve this to support multiple outputs and other data types.
-    ShaderGraphOutputSocket* outputSocket = graph->getOutputSocket();
-    ShaderPort* output = psOutputs->add(Type::COLOR4, outputSocket->getName());
-    output->setVariable(outputSocket->getVariable());
-    output->setPath(outputSocket->getPath());
+    // In Alyce we have specific outputs we want to write to
+    // from all our shaders (albedo, normal, position, emissive).
+    // We write to those instead of the default output variable from materialX
+    // ShaderGraphOutputSocket* outputSocket = graph->getOutputSocket();
+    // ShaderPort* output = psOutputs->add(Type::COLOR4, outputSocket->getName());
+    // output->setVariable(outputSocket->getVariable());
+    // output->setPath(outputSocket->getPath());
+    psOutputs->add(Type::COLOR4, "outAlbedo");
+    psOutputs->add(Type::COLOR4, "outNormal");
+    psOutputs->add(Type::COLOR4, "outWorldPosition");
+    psOutputs->add(Type::COLOR4, "outEmissive");
 
     // Create shader variables for all nodes that need this.
     createVariables(graph, context, *shader);

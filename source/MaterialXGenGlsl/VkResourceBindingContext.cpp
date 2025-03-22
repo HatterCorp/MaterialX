@@ -60,9 +60,18 @@ void VkResourceBindingContext::emitResourceBindings(GenContext& context, const V
     }
     if (hasValueUniforms)
     {
-        generator.emitLine("layout (std140, binding=" + std::to_string(_hwUniformBindLocation++) + ") " +
-                               syntax.getUniformQualifier() + " " + uniforms.getName() + "_" + stage.getName(),
-                           stage, false);
+        if (uniforms.getName() == HW::PUSH_CONSTANTS)
+        {
+            generator.emitLine("layout ( push_constant ) " +
+                                syntax.getUniformQualifier() + " " + uniforms.getName(),
+                            stage, false);
+        }
+        else
+        {
+            generator.emitLine("layout (std140, binding=" + std::to_string(_hwUniformBindLocation++) + ") " +
+                                syntax.getUniformQualifier() + " " + uniforms.getName() + "_" + stage.getName(),
+                            stage, false);
+        }
         generator.emitScopeBegin(stage);
         for (auto uniform : uniforms.getVariableOrder())
         {

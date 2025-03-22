@@ -28,7 +28,7 @@ void HwViewDirectionNode::createVariables(const ShaderNode& node, GenContext&, S
     addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_POSITION_WORLD, vs, ps);
     if (space == OBJECT_SPACE || space == MODEL_SPACE)
     {
-        addStageUniform(HW::PRIVATE_UNIFORMS, Type::MATRIX44, HW::T_WORLD_INVERSE_TRANSPOSE_MATRIX, ps);
+        addStageUniform(HW::PUSH_CONSTANTS, Type::MATRIX44, HW::T_WORLD_INVERSE_TRANSPOSE_MATRIX, vs);
     }
 }
 

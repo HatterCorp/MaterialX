@@ -25,7 +25,7 @@ void HwTangentNode::createVariables(const ShaderNode& node, GenContext&, Shader&
     const int space = spaceInput ? spaceInput->getValue()->asA<int>() : OBJECT_SPACE;
     if (space == WORLD_SPACE)
     {
-        addStageUniform(HW::PRIVATE_UNIFORMS, Type::MATRIX44, HW::T_WORLD_MATRIX, vs);
+        addStageUniform(HW::PUSH_CONSTANTS, Type::MATRIX44, HW::T_WORLD_MATRIX, vs);
         addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_TANGENT_WORLD, vs, ps);
     }
     else

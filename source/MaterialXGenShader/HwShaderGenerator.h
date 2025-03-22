@@ -203,6 +203,7 @@ extern MX_GENSHADER_API const string VERTEX_INPUTS;    // Geometric inputs for v
 extern MX_GENSHADER_API const string VERTEX_DATA;      // Connector block for data transfer from vertex stage to pixel stage.
 extern MX_GENSHADER_API const string PRIVATE_UNIFORMS; // Uniform inputs set privately by application.
 extern MX_GENSHADER_API const string PUBLIC_UNIFORMS;  // Uniform inputs visible in UI and set by user.
+extern MX_GENSHADER_API const string PUSH_CONSTANTS;   // Uniform push constants set privately by application.
 extern MX_GENSHADER_API const string LIGHT_DATA;       // Uniform inputs for light sources.
 extern MX_GENSHADER_API const string PIXEL_OUTPUTS;    // Outputs from the main/pixel stage.
 
