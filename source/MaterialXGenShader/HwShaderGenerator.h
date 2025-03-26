@@ -90,6 +90,8 @@ extern MX_GENSHADER_API const string T_IN_BITANGENT;
 extern MX_GENSHADER_API const string T_IN_TEXCOORD;
 extern MX_GENSHADER_API const string T_IN_GEOMPROP;
 extern MX_GENSHADER_API const string T_IN_COLOR;
+extern MX_GENSHADER_API const string T_IN_BONE_IDS;
+extern MX_GENSHADER_API const string T_IN_BONE_WEIGHTS;
 extern MX_GENSHADER_API const string T_POSITION_WORLD;
 extern MX_GENSHADER_API const string T_NORMAL_WORLD;
 extern MX_GENSHADER_API const string T_TANGENT_WORLD;
@@ -148,6 +150,8 @@ extern MX_GENSHADER_API const string IN_BITANGENT;
 extern MX_GENSHADER_API const string IN_TEXCOORD;
 extern MX_GENSHADER_API const string IN_GEOMPROP;
 extern MX_GENSHADER_API const string IN_COLOR;
+extern MX_GENSHADER_API const string IN_BONE_IDS;
+extern MX_GENSHADER_API const string IN_BONE_WEIGHTS;
 extern MX_GENSHADER_API const string POSITION_WORLD;
 extern MX_GENSHADER_API const string NORMAL_WORLD;
 extern MX_GENSHADER_API const string TANGENT_WORLD;
@@ -158,6 +162,7 @@ extern MX_GENSHADER_API const string TANGENT_OBJECT;
 extern MX_GENSHADER_API const string BITANGENT_OBJECT;
 extern MX_GENSHADER_API const string TEXCOORD;
 extern MX_GENSHADER_API const string COLOR;
+extern MX_GENSHADER_API const string BONES;
 extern MX_GENSHADER_API const string WORLD_MATRIX;
 extern MX_GENSHADER_API const string WORLD_INVERSE_MATRIX;
 extern MX_GENSHADER_API const string WORLD_TRANSPOSE_MATRIX;
@@ -204,6 +209,7 @@ extern MX_GENSHADER_API const string VERTEX_DATA;      // Connector block for da
 extern MX_GENSHADER_API const string PRIVATE_UNIFORMS; // Uniform inputs set privately by application.
 extern MX_GENSHADER_API const string PUBLIC_UNIFORMS;  // Uniform inputs visible in UI and set by user.
 extern MX_GENSHADER_API const string PUSH_CONSTANTS;   // Uniform push constants set privately by application.
+extern MX_GENSHADER_API const string BONES_UNIFORMS;   // Uniform for animation bones set privately by application.
 extern MX_GENSHADER_API const string LIGHT_DATA;       // Uniform inputs for light sources.
 extern MX_GENSHADER_API const string PIXEL_OUTPUTS;    // Outputs from the main/pixel stage.
 

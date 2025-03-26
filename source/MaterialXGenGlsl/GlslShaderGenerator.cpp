@@ -196,7 +196,19 @@ void GlslShaderGenerator::emitVertexStage(const ShaderGraph& graph, GenContext& 
     setFunctionName("main", stage);
     emitLine("void main()", stage, false);
     emitFunctionBodyBegin(graph, context, stage);
-    emitLine("vec4 hPositionWorld = " + HW::T_WORLD_MATRIX + " * vec4(" + HW::T_IN_POSITION + ", 1.0)", stage);
+    if (context.getOptions().hwAnimations)
+    {
+        emitLine("mat4 boneTransform  = " + HW::BONES + "[" + HW::T_IN_BONE_IDS + "[0]] * " + HW::T_IN_BONE_WEIGHTS + "[0]", stage);
+        emitLine("boneTransform      += " + HW::BONES + "[" + HW::T_IN_BONE_IDS + "[1]] * " + HW::T_IN_BONE_WEIGHTS + "[1]", stage);
+        emitLine("boneTransform      += " + HW::BONES + "[" + HW::T_IN_BONE_IDS + "[2]] * " + HW::T_IN_BONE_WEIGHTS + "[2]", stage);
+        emitLine("boneTransform      += " + HW::BONES + "[" + HW::T_IN_BONE_IDS + "[3]] * " + HW::T_IN_BONE_WEIGHTS + "[3]", stage);
+        emitLine("vec4 hPositionLocal = boneTransform * vec4(" + HW::T_IN_POSITION + ", 1.0)", stage);
+        emitLine("vec4 hPositionWorld = " + HW::T_WORLD_MATRIX + " * hPositionLocal", stage);
+    }
+    else
+    {
+        emitLine("vec4 hPositionWorld = " + HW::T_WORLD_MATRIX + " * vec4(" + HW::T_IN_POSITION + ", 1.0)", stage);
+    }
     emitLine("gl_Position = " + HW::T_VIEW_PROJECTION_MATRIX + " * hPositionWorld", stage);
 
     // In Alyce we always want this code to be written in our vertex shader

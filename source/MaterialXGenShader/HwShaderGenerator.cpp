@@ -40,6 +40,8 @@ const string T_IN_BITANGENT                   = "$inBitangent";
 const string T_IN_TEXCOORD                    = "$inTexcoord";
 const string T_IN_GEOMPROP                    = "$inGeomprop";
 const string T_IN_COLOR                       = "$inColor";
+const string T_IN_BONE_IDS                    = "$inBoneIds";
+const string T_IN_BONE_WEIGHTS                = "$inBoneWeights";
 const string T_POSITION_WORLD                 = "$positionWorld";
 const string T_NORMAL_WORLD                   = "$normalWorld";
 const string T_TANGENT_WORLD                  = "$tangentWorld";
@@ -96,6 +98,8 @@ const string IN_BITANGENT                     = "i_bitangent";
 const string IN_TEXCOORD                      = "i_texcoord";
 const string IN_GEOMPROP                      = "i_geomprop";
 const string IN_COLOR                         = "i_color";
+const string IN_BONE_IDS                      = "i_boneIds";
+const string IN_BONE_WEIGHTS                  = "i_boneWeights";
 const string POSITION_WORLD                   = "positionWorld";
 const string NORMAL_WORLD                     = "normalWorld";
 const string TANGENT_WORLD                    = "tangentWorld";
@@ -106,6 +110,7 @@ const string TANGENT_OBJECT                   = "tangentObject";
 const string BITANGENT_OBJECT                 = "bitangentObject";
 const string TEXCOORD                         = "texcoord";
 const string COLOR                            = "color";
+const string BONES                            = "u_bones";
 const string WORLD_MATRIX                     = "u_worldMatrix";
 const string WORLD_INVERSE_MATRIX             = "u_worldInverseMatrix";
 const string WORLD_TRANSPOSE_MATRIX           = "u_worldTransposeMatrix";
@@ -151,6 +156,7 @@ const string VERTEX_DATA                      = "VertexData";
 const string PRIVATE_UNIFORMS                 = "PrivateUniforms";
 const string PUBLIC_UNIFORMS                  = "PublicUniforms";
 const string PUSH_CONSTANTS                   = "PrivatePushConstants";
+const string BONES_UNIFORMS                   = "PrivateBonesUniforms";
 const string LIGHT_DATA                       = "LightData";
 const string PIXEL_OUTPUTS                    = "PixelOutputs";
 const string DIR_N                            = "N";
@@ -191,6 +197,8 @@ HwShaderGenerator::HwShaderGenerator(TypeSystemPtr typeSystem, SyntaxPtr syntax)
     _tokenSubstitutions[HW::T_IN_TEXCOORD] = HW::IN_TEXCOORD;
     _tokenSubstitutions[HW::T_IN_GEOMPROP] = HW::IN_GEOMPROP;
     _tokenSubstitutions[HW::T_IN_COLOR] = HW::IN_COLOR;
+    _tokenSubstitutions[HW::T_IN_BONE_IDS] = HW::IN_BONE_IDS;
+    _tokenSubstitutions[HW::T_IN_BONE_WEIGHTS] = HW::IN_BONE_WEIGHTS;
     _tokenSubstitutions[HW::T_POSITION_WORLD] = HW::POSITION_WORLD;
     _tokenSubstitutions[HW::T_NORMAL_WORLD] = HW::NORMAL_WORLD;
     _tokenSubstitutions[HW::T_TANGENT_WORLD] = HW::TANGENT_WORLD;
@@ -294,6 +302,11 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
     vs->createUniformBlock(HW::PRIVATE_UNIFORMS, "u_prv");
     vs->createUniformBlock(HW::PUBLIC_UNIFORMS, "u_pub");
     vs->createUniformBlock(HW::PUSH_CONSTANTS, "u_pc");
+    if (context.getOptions().hwAnimations)
+    {
+        vs->createUniformBlock(HW::BONES_UNIFORMS, "u_pbones");
+        addStageUniform(HW::BONES_UNIFORMS, Type::MATRIX44, HW::BONES, *vs);
+    }
 
     // Create required variables for vertex stage
     VariableBlock& vsInputs = vs->getInputBlock(HW::VERTEX_INPUTS);
@@ -328,6 +341,11 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
     addStageInput(HW::VERTEX_INPUTS, Type::COLOR4, HW::T_IN_COLOR + "_0", *vs);
     addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_TANGENT, *vs);
     addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_BITANGENT, *vs);
+    if (context.getOptions().hwAnimations)
+    {
+        addStageInput(HW::VERTEX_INPUTS, Type::IVECTOR3, HW::T_IN_BONE_IDS, *vs);
+        addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_BONE_WEIGHTS, *vs);
+    }
     addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_POSITION_WORLD, *vs, *ps);
     addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_NORMAL_WORLD, *vs, *ps);
     addStageConnector(HW::VERTEX_DATA, Type::VECTOR2, HW::T_TEXCOORD + "_0", *vs, *ps);
