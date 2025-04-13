@@ -90,6 +90,7 @@ const string T_SHADOW_MAP                     = "$shadowMap";
 const string T_SHADOW_MATRIX                  = "$shadowMatrix";
 const string T_VERTEX_DATA_INSTANCE           = "$vd";
 const string T_LIGHT_DATA_INSTANCE            = "$lightData";
+const string T_RESOLUTION                     = "$resolution";
 
 const string IN_POSITION                      = "i_position";
 const string IN_NORMAL                        = "i_normal";
@@ -149,6 +150,7 @@ const string SHADOW_MAP                       = "u_shadowMap";
 const string SHADOW_MATRIX                    = "u_shadowMatrix";
 const string VERTEX_DATA_INSTANCE             = "vd";
 const string LIGHT_DATA_INSTANCE              = "u_lightData";
+const string RESOLUTION                       = "u_resolution";
 const string LIGHT_DATA_MAX_LIGHT_SOURCES     = "MAX_LIGHT_SOURCES";
 
 const string VERTEX_INPUTS                    = "VertexInputs";
@@ -246,6 +248,7 @@ HwShaderGenerator::HwShaderGenerator(TypeSystemPtr typeSystem, SyntaxPtr syntax)
     _tokenSubstitutions[HW::T_AMB_OCC_GAIN] = HW::AMB_OCC_GAIN;
     _tokenSubstitutions[HW::T_VERTEX_DATA_INSTANCE] = HW::VERTEX_DATA_INSTANCE;
     _tokenSubstitutions[HW::T_LIGHT_DATA_INSTANCE] = HW::LIGHT_DATA_INSTANCE;
+    _tokenSubstitutions[HW::T_RESOLUTION] = HW::RESOLUTION;
     _tokenSubstitutions[HW::T_ENV_PREFILTER_MIP] = HW::ENV_PREFILTER_MIP;
 }
 
@@ -314,7 +317,11 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
     VariableBlock& vsPrivateUniforms = vs->getUniformBlock(HW::PRIVATE_UNIFORMS);
     // In Alyce the world matrix is provided as a push constant
     // vsPrivateUniforms.add(Type::MATRIX44, HW::T_WORLD_MATRIX);
+    vsPrivateUniforms.add(Type::MATRIX44, HW::T_WORLD_VIEW_MATRIX);
+    vsPrivateUniforms.add(Type::MATRIX44, HW::T_PROJ_MATRIX);
     vsPrivateUniforms.add(Type::MATRIX44, HW::T_VIEW_PROJECTION_MATRIX);
+    vsPrivateUniforms.add(Type::VECTOR3, HW::T_VIEW_POSITION);
+    vsPrivateUniforms.add(Type::VECTOR4, HW::T_RESOLUTION);
 
     // Create pixel stage.
     ShaderStagePtr ps = createStage(Stage::PIXEL, *shader);
@@ -341,11 +348,8 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
     addStageInput(HW::VERTEX_INPUTS, Type::COLOR4, HW::T_IN_COLOR + "_0", *vs);
     addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_TANGENT, *vs);
     addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_BITANGENT, *vs);
-    if (context.getOptions().hwAnimations)
-    {
-        addStageInput(HW::VERTEX_INPUTS, Type::IVECTOR3, HW::T_IN_BONE_IDS, *vs);
-        addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_BONE_WEIGHTS, *vs);
-    }
+    addStageInput(HW::VERTEX_INPUTS, Type::IVECTOR4, HW::T_IN_BONE_IDS, *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR4, HW::T_IN_BONE_WEIGHTS, *vs);
     addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_POSITION_WORLD, *vs, *ps);
     addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_NORMAL_WORLD, *vs, *ps);
     addStageConnector(HW::VERTEX_DATA, Type::VECTOR2, HW::T_TEXCOORD + "_0", *vs, *ps);

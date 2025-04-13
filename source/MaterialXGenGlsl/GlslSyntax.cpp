@@ -259,6 +259,17 @@ GlslSyntax::GlslSyntax(TypeSystemPtr typeSystem) :
             VEC4_MEMBERS));
 
     registerTypeSyntax(
+        Type::IVECTOR4,
+        std::make_shared<AggregateTypeSyntax>(
+            this,
+            "ivec4",
+            "ivec4(0)",
+            "ivec4(0)",
+            EMPTY_STRING,
+            EMPTY_STRING,
+            VEC4_MEMBERS));
+
+    registerTypeSyntax(
         Type::MATRIX33,
         std::make_shared<AggregateTypeSyntax>(
             this,
