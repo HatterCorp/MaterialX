@@ -344,16 +344,16 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
     // written out in our shaders. This code ensures these are always added.
     addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_POSITION, *vs);
     addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_NORMAL, *vs);
-    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR2, HW::T_IN_TEXCOORD + "_0", *vs);
     addStageInput(HW::VERTEX_INPUTS, Type::COLOR4, HW::T_IN_COLOR + "_0", *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR2, HW::T_IN_TEXCOORD + "_0", *vs);
     addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_TANGENT, *vs);
     addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_BITANGENT, *vs);
     addStageInput(HW::VERTEX_INPUTS, Type::IVECTOR4, HW::T_IN_BONE_IDS, *vs);
     addStageInput(HW::VERTEX_INPUTS, Type::VECTOR4, HW::T_IN_BONE_WEIGHTS, *vs);
     addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_POSITION_WORLD, *vs, *ps);
     addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_NORMAL_WORLD, *vs, *ps);
-    addStageConnector(HW::VERTEX_DATA, Type::VECTOR2, HW::T_TEXCOORD + "_0", *vs, *ps);
     addStageConnector(HW::VERTEX_DATA, Type::COLOR4, HW::T_COLOR + "_0", *vs, *ps);
+    addStageConnector(HW::VERTEX_DATA, Type::VECTOR2, HW::T_TEXCOORD + "_0", *vs, *ps);
     addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_TANGENT_WORLD, *vs, *ps);
     addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_BITANGENT_WORLD, *vs, *ps);
 
