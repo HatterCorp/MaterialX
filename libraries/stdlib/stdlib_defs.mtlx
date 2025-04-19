@@ -109,7 +109,7 @@
   <nodedef name="ND_surface_unlit" node="surface_unlit" nodegroup="shader" doc="Construct a surface shader from emission and transmission values.">
     <input name="albedo" type="float" value="1.0" doc="Albedo amount." />
     <input name="albedo_color" type="color3" value="1,1,1" doc="Surface albedo color." />
-    <input name="emission" type="float" value="0.0" doc="Surface emission amount." />
+    <input name="emission" type="float" value="1.0" doc="Surface emission amount." />
     <input name="emission_color" type="color3" value="1,1,1" doc="Surface emission color." />
     <input name="roughness" type="float" value="0.0" doc="Surface roughness." />
     <input name="transmission" type="float" value="0.0" doc="Surface transmission amount." />
