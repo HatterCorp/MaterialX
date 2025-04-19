@@ -610,24 +610,28 @@ void GlslShaderGenerator::emitPixelStage(const ShaderGraph& graph, GenContext& c
         {
             if (graph.hasClassification(ShaderNode::Classification::SURFACE))
             {
-                string outColor = outputConnection->getVariable() + ".color";
-                string outTransparency = outputConnection->getVariable() + ".transparency";
+                string outAlbedo = outputConnection->getVariable() + ".albedo";
+                string outEmission = outputConnection->getVariable() + ".emission";
+                string outRoughness = outputConnection->getVariable() + ".roughness";
+                // string outTransparency = outputConnection->getVariable() + ".transparency";
                 if (context.getOptions().hwSrgbEncodeOutput)
                 {
-                    outColor = "mx_srgb_encode(" + outColor + ")";
+                    outAlbedo = "mx_srgb_encode(" + outAlbedo + ")";
+                    outEmission = "mx_srgb_encode(" + outEmission + ")";
                 }
                 if (context.getOptions().hwTransparency)
                 {
-                    emitLine("float outAlpha = clamp(1.0 - dot(" + outTransparency + ", vec3(0.3333)), 0.0, 1.0)", stage);
+                    // emitLine("float outAlpha = clamp(1.0 - dot(" + outTransparency + ", vec3(0.3333)), 0.0, 1.0)", stage);
+                    emitLine("float outAlpha = 1.0", stage);
                     // In Alyce we have specific outputs we want to write to
                     // from all our shaders (albedo, normal, position, emissive).
                     // We write to those instead of the default output variable from materialX
                     // emitLine(outputSocket->getVariable() + " = vec4(" + outColor + ", outAlpha)", stage);
-                    emitLine("outAlbedo = vec4(" + outColor + ", outAlpha)", stage);
+                    emitLine("outAlbedo = vec4(" + outAlbedo + ", outAlpha)", stage);
                     emitLine("outNormal = vec4(" + HW::T_NORMAL_WORLD + ", outAlpha)", stage);
                     // TODO: Store roughness in position alpha channel?
-                    emitLine("outWorldPosition = vec4(" + HW::T_POSITION_WORLD + ", outAlpha)", stage);
-                    emitLine("outEmissive = vec4(0.0, 0.0, 0.0, outAlpha)", stage);
+                    emitLine("outWorldPosition = vec4(" + HW::T_POSITION_WORLD + ", " + outRoughness + ")", stage);
+                    emitLine("outEmissive = vec4(" + outEmission + ", outAlpha)", stage);
                     emitLine("if (outAlpha < " + HW::T_ALPHA_THRESHOLD + ")", stage, false);
                     emitScopeBegin(stage);
                     emitLine("discard", stage);
@@ -639,11 +643,11 @@ void GlslShaderGenerator::emitPixelStage(const ShaderGraph& graph, GenContext& c
                     // from all our shaders (albedo, normal, position, emissive).
                     // We write to those instead of the default output variable from materialX
                     // emitLine(outputSocket->getVariable() + " = vec4(" + outColor + ", 1.0)", stage);
-                    emitLine("outAlbedo = vec4(" + outColor + ", 1.0)", stage);
+                    emitLine("outAlbedo = vec4(" + outAlbedo + ", 1.0)", stage);
                     emitLine("outNormal = vec4(" + HW::T_NORMAL_WORLD + ", 1.0)", stage);
                     // TODO: Store roughness in position alpha channel?
-                    emitLine("outWorldPosition = vec4(" + HW::T_POSITION_WORLD + ", 0.0)", stage);
-                    emitLine("outEmissive = vec4(0.0, 0.0, 0.0, 1.0)", stage);
+                    emitLine("outWorldPosition = vec4(" + HW::T_POSITION_WORLD + ", " + outRoughness + ")", stage);
+                    emitLine("outEmissive = vec4(" + outEmission + ", 1.0)", stage);
                 }
             }
             else

@@ -330,10 +330,10 @@ GlslSyntax::GlslSyntax(TypeSystemPtr typeSystem) :
         std::make_shared<AggregateTypeSyntax>(
             this,
             "surfaceshader",
-            "surfaceshader(vec3(0.0),vec3(0.0))",
+            "surfaceshader(vec3(0.0),vec3(0.0), 0.0)",
             EMPTY_STRING,
             EMPTY_STRING,
-            "struct surfaceshader { vec3 color; vec3 transparency; };"));
+            "struct surfaceshader { vec3 albedo; vec3 emission; float roughness; };"));
 
     registerTypeSyntax(
         Type::VOLUMESHADER,
