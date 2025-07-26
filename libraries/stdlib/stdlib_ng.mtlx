@@ -4999,7 +4999,9 @@
   </nodegraph>
   <nodegraph name="NG_convert_color3_surfaceshader" nodedef="ND_convert_color3_surfaceshader">
     <surface_unlit name="surface" type="surfaceshader">
-      <input name="emission_color" type="color3" interfacename="in" />
+      <input name="albedo_color" type="color3" interfacename="in_albedo" />
+      <input name="emission_color" type="color3" interfacename="in_emission" />
+      <input name="roughness" type="float" interfacename="in_roughness" />
     </surface_unlit>
     <output name="out" type="surfaceshader" nodename="surface" />
   </nodegraph>

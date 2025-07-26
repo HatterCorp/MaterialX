@@ -40,6 +40,8 @@ const string T_IN_BITANGENT                   = "$inBitangent";
 const string T_IN_TEXCOORD                    = "$inTexcoord";
 const string T_IN_GEOMPROP                    = "$inGeomprop";
 const string T_IN_COLOR                       = "$inColor";
+const string T_IN_BONE_IDS                    = "$inBoneIds";
+const string T_IN_BONE_WEIGHTS                = "$inBoneWeights";
 const string T_POSITION_WORLD                 = "$positionWorld";
 const string T_NORMAL_WORLD                   = "$normalWorld";
 const string T_TANGENT_WORLD                  = "$tangentWorld";
@@ -88,6 +90,7 @@ const string T_SHADOW_MAP                     = "$shadowMap";
 const string T_SHADOW_MATRIX                  = "$shadowMatrix";
 const string T_VERTEX_DATA_INSTANCE           = "$vd";
 const string T_LIGHT_DATA_INSTANCE            = "$lightData";
+const string T_RESOLUTION                     = "$resolution";
 
 const string IN_POSITION                      = "i_position";
 const string IN_NORMAL                        = "i_normal";
@@ -96,6 +99,8 @@ const string IN_BITANGENT                     = "i_bitangent";
 const string IN_TEXCOORD                      = "i_texcoord";
 const string IN_GEOMPROP                      = "i_geomprop";
 const string IN_COLOR                         = "i_color";
+const string IN_BONE_IDS                      = "i_boneIds";
+const string IN_BONE_WEIGHTS                  = "i_boneWeights";
 const string POSITION_WORLD                   = "positionWorld";
 const string NORMAL_WORLD                     = "normalWorld";
 const string TANGENT_WORLD                    = "tangentWorld";
@@ -106,6 +111,7 @@ const string TANGENT_OBJECT                   = "tangentObject";
 const string BITANGENT_OBJECT                 = "bitangentObject";
 const string TEXCOORD                         = "texcoord";
 const string COLOR                            = "color";
+const string BONES                            = "u_bones";
 const string WORLD_MATRIX                     = "u_worldMatrix";
 const string WORLD_INVERSE_MATRIX             = "u_worldInverseMatrix";
 const string WORLD_TRANSPOSE_MATRIX           = "u_worldTransposeMatrix";
@@ -144,12 +150,15 @@ const string SHADOW_MAP                       = "u_shadowMap";
 const string SHADOW_MATRIX                    = "u_shadowMatrix";
 const string VERTEX_DATA_INSTANCE             = "vd";
 const string LIGHT_DATA_INSTANCE              = "u_lightData";
+const string RESOLUTION                       = "u_resolution";
 const string LIGHT_DATA_MAX_LIGHT_SOURCES     = "MAX_LIGHT_SOURCES";
 
 const string VERTEX_INPUTS                    = "VertexInputs";
 const string VERTEX_DATA                      = "VertexData";
 const string PRIVATE_UNIFORMS                 = "PrivateUniforms";
 const string PUBLIC_UNIFORMS                  = "PublicUniforms";
+const string PUSH_CONSTANTS                   = "PrivatePushConstants";
+const string BONES_UNIFORMS                   = "PrivateBonesUniforms";
 const string LIGHT_DATA                       = "LightData";
 const string PIXEL_OUTPUTS                    = "PixelOutputs";
 const string DIR_N                            = "N";
@@ -190,6 +199,8 @@ HwShaderGenerator::HwShaderGenerator(TypeSystemPtr typeSystem, SyntaxPtr syntax)
     _tokenSubstitutions[HW::T_IN_TEXCOORD] = HW::IN_TEXCOORD;
     _tokenSubstitutions[HW::T_IN_GEOMPROP] = HW::IN_GEOMPROP;
     _tokenSubstitutions[HW::T_IN_COLOR] = HW::IN_COLOR;
+    _tokenSubstitutions[HW::T_IN_BONE_IDS] = HW::IN_BONE_IDS;
+    _tokenSubstitutions[HW::T_IN_BONE_WEIGHTS] = HW::IN_BONE_WEIGHTS;
     _tokenSubstitutions[HW::T_POSITION_WORLD] = HW::POSITION_WORLD;
     _tokenSubstitutions[HW::T_NORMAL_WORLD] = HW::NORMAL_WORLD;
     _tokenSubstitutions[HW::T_TANGENT_WORLD] = HW::TANGENT_WORLD;
@@ -237,6 +248,7 @@ HwShaderGenerator::HwShaderGenerator(TypeSystemPtr typeSystem, SyntaxPtr syntax)
     _tokenSubstitutions[HW::T_AMB_OCC_GAIN] = HW::AMB_OCC_GAIN;
     _tokenSubstitutions[HW::T_VERTEX_DATA_INSTANCE] = HW::VERTEX_DATA_INSTANCE;
     _tokenSubstitutions[HW::T_LIGHT_DATA_INSTANCE] = HW::LIGHT_DATA_INSTANCE;
+    _tokenSubstitutions[HW::T_RESOLUTION] = HW::RESOLUTION;
     _tokenSubstitutions[HW::T_ENV_PREFILTER_MIP] = HW::ENV_PREFILTER_MIP;
 }
 
@@ -292,17 +304,29 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
 
     vs->createUniformBlock(HW::PRIVATE_UNIFORMS, "u_prv");
     vs->createUniformBlock(HW::PUBLIC_UNIFORMS, "u_pub");
+    vs->createUniformBlock(HW::PUSH_CONSTANTS, "u_pc");
+    if (context.getOptions().hwAnimations)
+    {
+        vs->createUniformBlock(HW::BONES_UNIFORMS, "u_pbones");
+        addStageUniform(HW::BONES_UNIFORMS, Type::MATRIX44, HW::BONES, *vs);
+    }
 
     // Create required variables for vertex stage
     VariableBlock& vsInputs = vs->getInputBlock(HW::VERTEX_INPUTS);
     vsInputs.add(Type::VECTOR3, HW::T_IN_POSITION);
     VariableBlock& vsPrivateUniforms = vs->getUniformBlock(HW::PRIVATE_UNIFORMS);
-    vsPrivateUniforms.add(Type::MATRIX44, HW::T_WORLD_MATRIX);
+    // In Alyce the world matrix is provided as a push constant
+    // vsPrivateUniforms.add(Type::MATRIX44, HW::T_WORLD_MATRIX);
+    vsPrivateUniforms.add(Type::MATRIX44, HW::T_WORLD_VIEW_MATRIX);
+    vsPrivateUniforms.add(Type::MATRIX44, HW::T_PROJ_MATRIX);
     vsPrivateUniforms.add(Type::MATRIX44, HW::T_VIEW_PROJECTION_MATRIX);
+    vsPrivateUniforms.add(Type::VECTOR3, HW::T_VIEW_POSITION);
+    vsPrivateUniforms.add(Type::VECTOR4, HW::T_RESOLUTION);
 
     // Create pixel stage.
     ShaderStagePtr ps = createStage(Stage::PIXEL, *shader);
     VariableBlockPtr psOutputs = ps->createOutputBlock(HW::PIXEL_OUTPUTS, "o_ps");
+    ps->createUniformBlock(HW::PUSH_CONSTANTS, "u_pc");
 
     // Create required Uniform blocks and any additional blocks if needed.
     VariableBlockPtr psPrivateUniforms = ps->createUniformBlock(HW::PRIVATE_UNIFORMS, "u_prv");
@@ -312,6 +336,26 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
 
     // Add a block for data from vertex to pixel shader.
     addStageConnectorBlock(HW::VERTEX_DATA, HW::T_VERTEX_DATA_INSTANCE, *vs, *ps);
+
+    // In Alyce, we want these push constants to always be present in our vertex shader
+    addStageUniform(HW::PUSH_CONSTANTS, Type::MATRIX44, HW::T_WORLD_MATRIX, *vs);
+    addStageUniform(HW::PUSH_CONSTANTS, Type::MATRIX44, HW::T_WORLD_INVERSE_TRANSPOSE_MATRIX, *vs);
+    // In Alyce, we have specific uniforms and attributes that we always want
+    // written out in our shaders. This code ensures these are always added.
+    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_POSITION, *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_NORMAL, *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::COLOR4, HW::T_IN_COLOR + "_0", *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR2, HW::T_IN_TEXCOORD + "_0", *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_TANGENT, *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR3, HW::T_IN_BITANGENT, *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::IVECTOR4, HW::T_IN_BONE_IDS, *vs);
+    addStageInput(HW::VERTEX_INPUTS, Type::VECTOR4, HW::T_IN_BONE_WEIGHTS, *vs);
+    addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_POSITION_WORLD, *vs, *ps);
+    addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_NORMAL_WORLD, *vs, *ps);
+    addStageConnector(HW::VERTEX_DATA, Type::COLOR4, HW::T_COLOR + "_0", *vs, *ps);
+    addStageConnector(HW::VERTEX_DATA, Type::VECTOR2, HW::T_TEXCOORD + "_0", *vs, *ps);
+    addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_TANGENT_WORLD, *vs, *ps);
+    addStageConnector(HW::VERTEX_DATA, Type::VECTOR3, HW::T_BITANGENT_WORLD, *vs, *ps);
 
     // Add uniforms for transparent rendering.
     if (context.getOptions().hwTransparency)
@@ -336,8 +380,11 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
     }
 
     // Add uniforms for environment lighting.
-    bool lighting = graph->hasClassification(ShaderNode::Classification::SHADER | ShaderNode::Classification::SURFACE) ||
-                    graph->hasClassification(ShaderNode::Classification::BSDF);
+    // In Alyce, our lighting is deferred, so no need to generate
+    // any lighting code in these shaders
+    // bool lighting = graph->hasClassification(ShaderNode::Classification::SHADER | ShaderNode::Classification::SURFACE) ||
+    //                 graph->hasClassification(ShaderNode::Classification::BSDF);
+    bool lighting = false;
     if (lighting && context.getOptions().hwSpecularEnvironmentMethod != SPECULAR_ENVIRONMENT_NONE)
     {
         const Matrix44 yRotationPI = Matrix44::createScale(Vector3(-1, 1, -1));
@@ -383,10 +430,17 @@ ShaderPtr HwShaderGenerator::createShader(const string& name, ElementPtr element
     // Add the pixel stage output. This needs to be a color4 for rendering,
     // so copy name and variable from the graph output but set type to color4.
     // TODO: Improve this to support multiple outputs and other data types.
-    ShaderGraphOutputSocket* outputSocket = graph->getOutputSocket();
-    ShaderPort* output = psOutputs->add(Type::COLOR4, outputSocket->getName());
-    output->setVariable(outputSocket->getVariable());
-    output->setPath(outputSocket->getPath());
+    // In Alyce we have specific outputs we want to write to
+    // from all our shaders (albedo, normal, position, emissive).
+    // We write to those instead of the default output variable from materialX
+    // ShaderGraphOutputSocket* outputSocket = graph->getOutputSocket();
+    // ShaderPort* output = psOutputs->add(Type::COLOR4, outputSocket->getName());
+    // output->setVariable(outputSocket->getVariable());
+    // output->setPath(outputSocket->getPath());
+    psOutputs->add(Type::COLOR4, "outAlbedo");
+    psOutputs->add(Type::COLOR4, "outNormal");
+    psOutputs->add(Type::COLOR4, "outWorldPosition");
+    psOutputs->add(Type::COLOR4, "outEmissive");
 
     // Create shader variables for all nodes that need this.
     createVariables(graph, context, *shader);

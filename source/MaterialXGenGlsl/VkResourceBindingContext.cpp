@@ -60,13 +60,30 @@ void VkResourceBindingContext::emitResourceBindings(GenContext& context, const V
     }
     if (hasValueUniforms)
     {
-        generator.emitLine("layout (std140, binding=" + std::to_string(_hwUniformBindLocation++) + ") " +
-                               syntax.getUniformQualifier() + " " + uniforms.getName() + "_" + stage.getName(),
-                           stage, false);
+        if (uniforms.getName() == HW::PUSH_CONSTANTS)
+        {
+            generator.emitLine("layout ( push_constant ) " +
+                                syntax.getUniformQualifier() + " " + uniforms.getName(),
+                            stage, false);
+        }
+        else
+        {
+            generator.emitLine("layout (std140, binding=" + std::to_string(_hwUniformBindLocation++) + ") " +
+                                syntax.getUniformQualifier() + " " + uniforms.getName() + "_" + stage.getName(),
+                            stage, false);
+        }
         generator.emitScopeBegin(stage);
         for (auto uniform : uniforms.getVariableOrder())
         {
-            if (uniform->getType() != Type::FILENAME)
+            if (uniforms.getName() == HW::BONES_UNIFORMS)
+            {
+                generator.emitLineBegin(stage);
+                generator.emitVariableDeclaration(uniform, EMPTY_STRING, context, stage, false);
+                generator.emitString("[" + std::to_string(context.getOptions().hwMaxNumBones) + "]", stage);
+                generator.emitString(Syntax::SEMICOLON, stage);
+                generator.emitLineEnd(stage, false);
+            }
+            else if (uniform->getType() != Type::FILENAME)
             {
                 generator.emitLineBegin(stage);
                 generator.emitVariableDeclaration(uniform, EMPTY_STRING, context, stage, false);

@@ -54,7 +54,7 @@ class MX_GENGLSL_API GlslShaderGenerator : public HwShaderGenerator
     ShaderNodeImplPtr getImplementation(const NodeDef& nodedef, GenContext& context) const override;
 
     /// Determine the prefix of vertex data variables.
-    string getVertexDataPrefix(const VariableBlock& vertexData) const override;
+    virtual string getVertexDataPrefix(const VariableBlock& vertexData) const override;
 
   public:
     /// Unique identifier for this generator target

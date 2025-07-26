@@ -196,8 +196,59 @@ void GlslShaderGenerator::emitVertexStage(const ShaderGraph& graph, GenContext& 
     setFunctionName("main", stage);
     emitLine("void main()", stage, false);
     emitFunctionBodyBegin(graph, context, stage);
-    emitLine("vec4 hPositionWorld = " + HW::T_WORLD_MATRIX + " * vec4(" + HW::T_IN_POSITION + ", 1.0)", stage);
+    if (context.getOptions().hwAnimations)
+    {
+        emitLine("mat4 boneTransform  = " + HW::BONES + "[" + HW::T_IN_BONE_IDS + "[0]] * " + HW::T_IN_BONE_WEIGHTS + "[0]", stage);
+        emitLine("boneTransform      += " + HW::BONES + "[" + HW::T_IN_BONE_IDS + "[1]] * " + HW::T_IN_BONE_WEIGHTS + "[1]", stage);
+        emitLine("boneTransform      += " + HW::BONES + "[" + HW::T_IN_BONE_IDS + "[2]] * " + HW::T_IN_BONE_WEIGHTS + "[2]", stage);
+        emitLine("boneTransform      += " + HW::BONES + "[" + HW::T_IN_BONE_IDS + "[3]] * " + HW::T_IN_BONE_WEIGHTS + "[3]", stage);
+        emitLine("vec4 hPositionLocal = boneTransform * vec4(" + HW::T_IN_POSITION + ", 1.0)", stage);
+        emitLine("vec4 hPositionWorld = " + HW::T_WORLD_MATRIX + " * hPositionLocal", stage);
+    }
+    else
+    {
+        emitLine("vec4 hPositionWorld = " + HW::T_WORLD_MATRIX + " * vec4(" + HW::T_IN_POSITION + ", 1.0)", stage);
+    }
     emitLine("gl_Position = " + HW::T_VIEW_PROJECTION_MATRIX + " * hPositionWorld", stage);
+
+    // In Alyce we always want this code to be written in our vertex shader
+    VariableBlock& vertexData = stage.getOutputBlock(HW::VERTEX_DATA);
+    ShaderPort* position = vertexData[HW::T_POSITION_WORLD];
+    if (!position->isEmitted())
+    {
+        position->setEmitted();
+        emitLine(position->getVariable() + " = hPositionWorld.xyz", stage);
+    }
+    ShaderPort* normal = vertexData[HW::T_NORMAL_WORLD];
+    if (!normal->isEmitted())
+    {
+        normal->setEmitted();
+        emitLine(normal->getVariable() + " = normalize((" + HW::T_WORLD_INVERSE_TRANSPOSE_MATRIX + " * vec4(" + HW::T_IN_NORMAL + ", 0)).xyz)", stage);
+    }
+    ShaderPort* texcoord = vertexData[HW::T_TEXCOORD + "_0"];
+    if (!texcoord->isEmitted())
+    {
+        texcoord->setEmitted();
+        emitLine(texcoord->getVariable() + " = " + HW::T_IN_TEXCOORD + "_0", stage);
+    }
+    ShaderPort* color = vertexData[HW::T_COLOR + "_0"];
+    if (!color->isEmitted())
+    {
+        color->setEmitted();
+        emitLine(color->getVariable() + " = " + HW::T_IN_COLOR + "_0", stage);
+    }
+    ShaderPort* tangent = vertexData[HW::T_TANGENT_WORLD];
+    if (!tangent->isEmitted())
+    {
+        tangent->setEmitted();
+        emitLine(tangent->getVariable() + " = normalize((" + HW::T_WORLD_MATRIX + " * vec4(" + HW::T_IN_TANGENT + ", 0.0)).xyz)", stage);
+    }
+    ShaderPort* bitangent = vertexData[HW::T_BITANGENT_WORLD];
+    if (!bitangent->isEmitted())
+    {
+        bitangent->setEmitted();
+        emitLine(bitangent->getVariable() + " = normalize((" + HW::T_WORLD_MATRIX + " * vec4(" + HW::T_IN_BITANGENT + ", 0.0)).xyz)", stage);
+    }
 
     // Emit all function calls in order
     for (const ShaderNode* node : graph.getNodes())
@@ -418,7 +469,9 @@ void GlslShaderGenerator::emitPixelStage(const ShaderGraph& graph, GenContext& c
     emitLineBreak(stage);
 
     // Determine whether lighting is required
-    bool lighting = requiresLighting(graph);
+    // In Alyce, our lighting is deferred, so no need to generate
+    // any lighting code in these shaders
+    bool lighting = false; //requiresLighting(graph);
 
     // Define directional albedo approach
     if (lighting || context.getOptions().hwWriteAlbedoTable || context.getOptions().hwWriteEnvPrefilter)
@@ -483,7 +536,9 @@ void GlslShaderGenerator::emitPixelStage(const ShaderGraph& graph, GenContext& c
         emitLibraryInclude("stdlib/genglsl/lib/" + _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV], context, stage);
     }
 
-    emitLightFunctionDefinitions(graph, context, stage);
+    // In Alyce, our lighting is deferred, so no need to generate
+    // any lighting code in these shaders
+    // emitLightFunctionDefinitions(graph, context, stage);
 
     // Emit function definitions for all nodes in the graph.
     emitFunctionDefinitions(graph, context, stage);
@@ -555,16 +610,28 @@ void GlslShaderGenerator::emitPixelStage(const ShaderGraph& graph, GenContext& c
         {
             if (graph.hasClassification(ShaderNode::Classification::SURFACE))
             {
-                string outColor = outputConnection->getVariable() + ".color";
-                string outTransparency = outputConnection->getVariable() + ".transparency";
+                string outAlbedo = outputConnection->getVariable() + ".albedo";
+                string outEmission = outputConnection->getVariable() + ".emission";
+                string outRoughness = outputConnection->getVariable() + ".roughness";
+                // string outTransparency = outputConnection->getVariable() + ".transparency";
                 if (context.getOptions().hwSrgbEncodeOutput)
                 {
-                    outColor = "mx_srgb_encode(" + outColor + ")";
+                    outAlbedo = "mx_srgb_encode(" + outAlbedo + ")";
+                    outEmission = "mx_srgb_encode(" + outEmission + ")";
                 }
                 if (context.getOptions().hwTransparency)
                 {
-                    emitLine("float outAlpha = clamp(1.0 - dot(" + outTransparency + ", vec3(0.3333)), 0.0, 1.0)", stage);
-                    emitLine(outputSocket->getVariable() + " = vec4(" + outColor + ", outAlpha)", stage);
+                    // emitLine("float outAlpha = clamp(1.0 - dot(" + outTransparency + ", vec3(0.3333)), 0.0, 1.0)", stage);
+                    emitLine("float outAlpha = 1.0", stage);
+                    // In Alyce we have specific outputs we want to write to
+                    // from all our shaders (albedo, normal, position, emissive).
+                    // We write to those instead of the default output variable from materialX
+                    // emitLine(outputSocket->getVariable() + " = vec4(" + outColor + ", outAlpha)", stage);
+                    emitLine("outAlbedo = vec4(" + outAlbedo + ", outAlpha)", stage);
+                    emitLine("outNormal = vec4(" + HW::T_NORMAL_WORLD + ", outAlpha)", stage);
+                    // TODO: Store roughness in position alpha channel?
+                    emitLine("outWorldPosition = vec4(" + HW::T_POSITION_WORLD + ", " + outRoughness + ")", stage);
+                    emitLine("outEmissive = vec4(" + outEmission + ", outAlpha)", stage);
                     emitLine("if (outAlpha < " + HW::T_ALPHA_THRESHOLD + ")", stage, false);
                     emitScopeBegin(stage);
                     emitLine("discard", stage);
@@ -572,7 +639,15 @@ void GlslShaderGenerator::emitPixelStage(const ShaderGraph& graph, GenContext& c
                 }
                 else
                 {
-                    emitLine(outputSocket->getVariable() + " = vec4(" + outColor + ", 1.0)", stage);
+                    // In Alyce we have specific outputs we want to write to
+                    // from all our shaders (albedo, normal, position, emissive).
+                    // We write to those instead of the default output variable from materialX
+                    // emitLine(outputSocket->getVariable() + " = vec4(" + outColor + ", 1.0)", stage);
+                    emitLine("outAlbedo = vec4(" + outAlbedo + ", 1.0)", stage);
+                    emitLine("outNormal = vec4(" + HW::T_NORMAL_WORLD + ", 1.0)", stage);
+                    // TODO: Store roughness in position alpha channel?
+                    emitLine("outWorldPosition = vec4(" + HW::T_POSITION_WORLD + ", " + outRoughness + ")", stage);
+                    emitLine("outEmissive = vec4(" + outEmission + ", 1.0)", stage);
                 }
             }
             else

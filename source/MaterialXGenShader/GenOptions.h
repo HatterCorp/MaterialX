@@ -93,7 +93,9 @@ class MX_GENSHADER_API GenOptions
         hwNormalizeUdimTexCoords(false),
         hwWriteAlbedoTable(false),
         hwWriteEnvPrefilter(false),
-        hwImplicitBitangents(true)
+        hwImplicitBitangents(true),
+        hwAnimations(true),
+        hwMaxNumBones(200)
     {
     }
     virtual ~GenOptions() { }
@@ -191,6 +193,12 @@ class MX_GENSHADER_API GenOptions
     /// Calculate fallback bitangents from existing normals and tangents
     /// inside the bitangent node.
     bool hwImplicitBitangents;
+
+    /// Calculate animation deformation
+    bool hwAnimations;
+
+    /// Maximum num of bones for animation rigs
+    int hwMaxNumBones;
 };
 
 MATERIALX_NAMESPACE_END

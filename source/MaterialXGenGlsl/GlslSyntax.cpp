@@ -237,12 +237,34 @@ GlslSyntax::GlslSyntax(TypeSystemPtr typeSystem) :
             VEC3_MEMBERS));
 
     registerTypeSyntax(
+        Type::IVECTOR3,
+        std::make_shared<AggregateTypeSyntax>(
+            this,
+            "ivec3",
+            "ivec3(0)",
+            "ivec3(0)",
+            EMPTY_STRING,
+            EMPTY_STRING,
+            VEC3_MEMBERS));
+
+    registerTypeSyntax(
         Type::VECTOR4,
         std::make_shared<AggregateTypeSyntax>(
             this,
             "vec4",
             "vec4(0.0)",
             "vec4(0.0)",
+            EMPTY_STRING,
+            EMPTY_STRING,
+            VEC4_MEMBERS));
+
+    registerTypeSyntax(
+        Type::IVECTOR4,
+        std::make_shared<AggregateTypeSyntax>(
+            this,
+            "ivec4",
+            "ivec4(0)",
+            "ivec4(0)",
             EMPTY_STRING,
             EMPTY_STRING,
             VEC4_MEMBERS));
@@ -308,10 +330,10 @@ GlslSyntax::GlslSyntax(TypeSystemPtr typeSystem) :
         std::make_shared<AggregateTypeSyntax>(
             this,
             "surfaceshader",
-            "surfaceshader(vec3(0.0),vec3(0.0))",
+            "surfaceshader(vec3(0.0),vec3(0.0), 0.0)",
             EMPTY_STRING,
             EMPTY_STRING,
-            "struct surfaceshader { vec3 color; vec3 transparency; };"));
+            "struct surfaceshader { vec3 albedo; vec3 emission; float roughness; };"));
 
     registerTypeSyntax(
         Type::VOLUMESHADER,
